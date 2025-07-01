@@ -269,6 +269,76 @@ body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; ba
 .menu-item:hover { background: var(--primary-light); color: var(--primary-color); }
 .menu-item:hover svg { color: var(--primary-color); }
 
+.suggestions-area {
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--glass-border);
+  background: var(--surface-color);
+  transition: background-color 0.3s, border-color 0.3s;
+  flex-shrink: 0;
+}
+
+.suggested-prompts-fixed {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.prompt-button-fixed {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  white-space: nowrap;
+  flex: 0 1 auto;
+  min-width: 0;
+  font-family: inherit;
+  box-shadow: var(--shadow-sm);
+}
+
+.prompt-button-fixed:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.prompt-button-fixed:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 768px) {
+  .suggestions-area {
+    padding: var(--space-sm) var(--space-md);
+  }
+  
+  .suggested-prompts-fixed {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+  
+  .prompt-button-fixed {
+    white-space: normal;
+    text-align: center;
+    padding: var(--space-sm);
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .prompt-button-fixed {
+    font-size: 0.75rem;
+    padding: var(--space-xs) var(--space-sm);
+  }
+}
+
 .auth-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 2000; padding: 1rem; }
 .auth-modal-content { 
   background: var(--surface-color); 

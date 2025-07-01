@@ -64,7 +64,7 @@ export const ChatProvider = ({ children }) => {
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
       
       // Generate bot response
-      const fullBotResponse = generateBotResponse(text);
+      const fullBotResponse = generateBotResponse(text, messages);
       const botMessageId = Date.now() + 1;
       
       // Create initial empty bot message
@@ -117,20 +117,68 @@ export const ChatProvider = ({ children }) => {
   };
 
   // Enhanced bot response generator
-  const generateBotResponse = (userText) => {
-    const responses = [
-      `That's a fascinating question about "${userText}". Let me share some insights on this topic. Based on current understanding, there are several key aspects to consider when approaching this subject.`,
-      `I find your inquiry about "${userText}" quite intriguing. This touches on some important concepts that are worth exploring in detail. Let me break this down for you step by step.`,
-      `Thank you for asking about "${userText}". This is actually a complex topic with multiple dimensions. I'd be happy to help you understand the various aspects involved here.`,
-      `Your question regarding "${userText}" opens up some interesting possibilities for discussion. There are several angles we could explore, each offering unique perspectives on the matter.`,
-      `I appreciate you bringing up "${userText}". This subject has been evolving rapidly, and there are some exciting developments worth discussing. Let me walk you through the key points.`,
-      `The topic of "${userText}" is quite relevant in today's context. There are practical applications and theoretical considerations that make this an important area to understand thoroughly.`,
-      `When it comes to "${userText}", there are both traditional approaches and modern innovations to consider. I'll help you navigate through the essential information you need to know.`,
-      `Your interest in "${userText}" is well-placed, as this area has significant implications for various fields. Let me provide you with a comprehensive overview of the current landscape.`,
-      `I'm glad you asked about "${userText}". This connects to several broader themes that are worth exploring. Understanding these connections can provide valuable insights.`,
-      `The subject of "${userText}" involves some nuanced considerations that are important to address. I'll help clarify the key concepts and their practical applications.`
-    ];
+  const generateBotResponse = (userText, conversationHistory = []) => {
+    const recentMessages = conversationHistory.slice(-4);
+    const conversationContext = recentMessages.map(m => m.text).join(' ').toLowerCase();
     
+    // Analyze context and generate appropriate responses
+    const contextualResponses = {
+      technology: [
+        `Regarding "${userText}" in the tech space, this is quite fascinating. The technological landscape is constantly evolving, and this particular area has seen significant advancements recently. Let me share some insights on the current state and future possibilities.`,
+        `Your question about "${userText}" touches on some cutting-edge technology concepts. From a technical perspective, there are several approaches and methodologies that are particularly relevant here. I'll break down the key technical aspects for you.`,
+        `The technology behind "${userText}" is quite sophisticated. There are both established practices and emerging innovations in this field. Understanding the technical foundations will help you grasp the broader implications and potential applications.`
+      ],
+      business: [
+        `From a business standpoint, "${userText}" presents interesting opportunities and challenges. Market dynamics, competitive advantages, and strategic positioning all play crucial roles here. Let me outline the key business considerations.`,
+        `Your inquiry about "${userText}" has significant business implications. ROI, scalability, and market adoption are critical factors to consider. I'll help you understand the business case and potential impact.`,
+        `In the business context of "${userText}", there are several strategic approaches worth exploring. Cost-benefit analysis, implementation timelines, and organizational change management are all important factors to consider.`
+      ],
+      education: [
+        `Great question about "${userText}"! Let me break this down in a way that's easy to understand. I'll start with the fundamentals and build up to more complex concepts, providing examples along the way.`,
+        `I'd be happy to explain "${userText}" in detail. Learning about this topic involves understanding several key concepts. Let me walk you through each component step by step.`,
+        `Your interest in "${userText}" is excellent for learning purposes. This topic connects to many other areas of knowledge, and I'll help you see those connections while explaining the core concepts.`
+      ],
+      creative: [
+        `"${userText}" opens up so many creative possibilities! There are numerous innovative approaches we could explore here. Let me share some creative strategies and out-of-the-box thinking that could be applied.`,
+        `I love the creative aspect of "${userText}"! This is where imagination meets practical application. There are several artistic and innovative directions we could take this concept.`,
+        `Your creative inquiry about "${userText}" is inspiring! The intersection of creativity and functionality often leads to the most interesting solutions. Let me suggest some creative approaches and techniques.`
+      ],
+      problem_solving: [
+        `I understand you're looking for solutions regarding "${userText}". Let's approach this systematically. I'll help you identify the root causes and explore various problem-solving methodologies that could be effective here.`,
+        `Problem-solving around "${userText}" requires a structured approach. Let me guide you through different strategies and help you evaluate which solutions might work best for your specific situation.`,
+        `When it comes to resolving issues with "${userText}", there are several troubleshooting techniques we can employ. I'll help you work through this step by step with practical solutions.`
+      ],
+      general: [
+        `That's an interesting question about "${userText}". This topic has multiple dimensions worth exploring. Let me provide you with a comprehensive overview that covers the key aspects and their interconnections.`,
+        `Your inquiry about "${userText}" touches on several important points. I'll help you understand the broader context and how this relates to other relevant topics you might find interesting.`,
+        `Thanks for asking about "${userText}". This subject offers rich opportunities for discussion. Let me share insights that will give you a well-rounded understanding of the topic.`
+      ]
+    };
+
+    // Detect context keywords (same as in ChatWindow)
+    const contexts = {
+      technology: ['ai', 'artificial intelligence', 'tech', 'software', 'programming', 'code', 'algorithm', 'data', 'computer', 'digital', 'automation', 'machine learning', 'development'],
+      business: ['business', 'company', 'market', 'sales', 'revenue', 'profit', 'strategy', 'management', 'productivity', 'efficiency', 'growth', 'customer', 'service'],
+      education: ['learn', 'study', 'education', 'school', 'university', 'course', 'tutorial', 'explain', 'understand', 'knowledge', 'teach', 'research', 'academic'],
+      creative: ['creative', 'design', 'art', 'writing', 'content', 'marketing', 'brand', 'idea', 'innovation', 'brainstorm', 'inspiration', 'visual', 'story'],
+      problem_solving: ['problem', 'issue', 'solve', 'fix', 'error', 'bug', 'troubleshoot', 'help', 'solution', 'resolve', 'debug', 'challenge', 'difficulty']
+    };
+
+    // Find the most relevant context
+    let maxMatches = 0;
+    let detectedContext = 'general';
+    
+    Object.entries(contexts).forEach(([context, keywords]) => {
+      const matches = keywords.filter(keyword => 
+        conversationContext.includes(keyword) || userText.toLowerCase().includes(keyword)
+      ).length;
+      if (matches > maxMatches) {
+        maxMatches = matches;
+        detectedContext = context;
+      }
+    });
+
+    const responses = contextualResponses[detectedContext] || contextualResponses.general;
     return responses[Math.floor(Math.random() * responses.length)];
   };
 

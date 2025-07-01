@@ -145,11 +145,78 @@ const ChatWindow = () => {
     setShowUserMenu(false);
   };
 
-  const suggestedPrompts = [
-    "Tell me about artificial intelligence",
-    "Help me write a professional email",
-    "Explain quantum computing simply",
-  ];
+  const getContextualSuggestions = () => {
+    if (messages.length === 0) {
+      return [
+        "Tell me about artificial intelligence",
+        "Help me write a professional email", 
+        "Explain quantum computing simply"
+      ];
+    }
+
+    // Analyze recent conversation context
+    const recentMessages = messages.slice(-6); // Last 6 messages
+    const conversationText = recentMessages.map(m => m.text).join(' ').toLowerCase();
+    
+    // Define context-based suggestions
+    const contextSuggestions = {
+      technology: [
+        "What are the latest trends in this field?",
+        "How can I implement this practically?",
+        "What are the potential challenges?"
+      ],
+      business: [
+        "What are the business implications?",
+        "How can this improve productivity?",
+        "What's the ROI on this approach?"
+      ],
+      education: [
+        "Can you explain this in simpler terms?",
+        "What are some real-world examples?",
+        "How can I learn more about this?"
+      ],
+      creative: [
+        "Can you help me brainstorm ideas?",
+        "What are some creative approaches?",
+        "How can I make this more engaging?"
+      ],
+      problem_solving: [
+        "What are alternative solutions?",
+        "How can I troubleshoot this?",
+        "What steps should I take next?"
+      ],
+      general: [
+        "Can you elaborate on that?",
+        "What else should I know?",
+        "How does this relate to other topics?"
+      ]
+    };
+
+    // Detect context keywords
+    const contexts = {
+      technology: ['ai', 'artificial intelligence', 'tech', 'software', 'programming', 'code', 'algorithm', 'data', 'computer', 'digital', 'automation', 'machine learning', 'development'],
+      business: ['business', 'company', 'market', 'sales', 'revenue', 'profit', 'strategy', 'management', 'productivity', 'efficiency', 'growth', 'customer', 'service'],
+      education: ['learn', 'study', 'education', 'school', 'university', 'course', 'tutorial', 'explain', 'understand', 'knowledge', 'teach', 'research', 'academic'],
+      creative: ['creative', 'design', 'art', 'writing', 'content', 'marketing', 'brand', 'idea', 'innovation', 'brainstorm', 'inspiration', 'visual', 'story'],
+      problem_solving: ['problem', 'issue', 'solve', 'fix', 'error', 'bug', 'troubleshoot', 'help', 'solution', 'resolve', 'debug', 'challenge', 'difficulty']
+    };
+
+    // Find the most relevant context
+    let maxMatches = 0;
+    let detectedContext = 'general';
+    
+    Object.entries(contexts).forEach(([context, keywords]) => {
+      const matches = keywords.filter(keyword => conversationText.includes(keyword)).length;
+      if (matches > maxMatches) {
+        maxMatches = matches;
+        detectedContext = context;
+      }
+    });
+
+    return contextSuggestions[detectedContext] || contextSuggestions.general;
+  };
+
+  const suggestedPrompts = getContextualSuggestions();
 
   return (
     <motion.div 
@@ -216,12 +283,7 @@ const ChatWindow = () => {
           {messages.length === 0 && (
             <motion.div className="welcome-message" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <h2>Welcome to AI Chat Assistant!</h2>
-              <p>Start a conversation below or try a prompt.</p>
-              <div className="suggested-prompts">
-                {suggestedPrompts.map((prompt, index) => (
-                  <motion.button key={index} className="prompt-button" onClick={() => setInputText(prompt)} whileHover={{ y: -1 }} whileTap={{ scale: 0.99 }}>{prompt}</motion.button>
-                ))}
-              </div>
+              <p>Start a conversation below or try a suggested prompt.</p>
               {!isAuthenticated && (
                 <p>
                   <button onClick={() => setShowAuthModal(true)} className="auth-link">Login or Sign up</button> to save your history.
@@ -265,6 +327,25 @@ const ChatWindow = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <motion.div className="suggestions-area" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+        <div className="suggested-prompts-fixed">
+          {suggestedPrompts.map((prompt, index) => (
+            <motion.button 
+              key={`${prompt}-${index}-${messages.length}`} 
+              className="prompt-button-fixed" 
+              onClick={() => setInputText(prompt)} 
+              whileHover={{ y: -1, scale: 1.02 }} 
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              {prompt}
+            </motion.button>
+          ))}
+        </div>
+      </motion.div>
 
       <motion.div className="input-area" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}>
         <div className="input-container">
