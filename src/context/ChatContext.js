@@ -60,17 +60,78 @@ export const ChatProvider = ({ children }) => {
     setError(null);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const botMessage = { id: Date.now() + 1, text: `This is a simulated response to: "${text}"`, sender: 'bot', timestamp: new Date().toISOString() };
-      const finalMessages = [...newMessages, botMessage];
-      setMessages(finalMessages);
-      saveHistory(finalMessages, historyKey);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
+      
+      // Generate bot response
+      const fullBotResponse = generateBotResponse(text);
+      const botMessageId = Date.now() + 1;
+      
+      // Create initial empty bot message
+      const initialBotMessage = { 
+        id: botMessageId, 
+        text: '', 
+        sender: 'bot', 
+        timestamp: new Date().toISOString(),
+        isStreaming: true
+      };
+      
+      setIsTyping(false);
+      const messagesWithBot = [...newMessages, initialBotMessage];
+      setMessages(messagesWithBot);
+      
+      // Animate text word by word
+      const words = fullBotResponse.split(' ');
+      let currentText = '';
+      
+      for (let i = 0; i < words.length; i++) {
+        currentText += (i > 0 ? ' ' : '') + words[i];
+        
+        const updatedMessage = {
+          ...initialBotMessage,
+          text: currentText,
+          isStreaming: i < words.length - 1
+        };
+        
+        const updatedMessages = [...newMessages, updatedMessage];
+        setMessages(updatedMessages);
+        
+        // Save after each word for persistence
+        if (i === words.length - 1) {
+          const finalMessage = { ...updatedMessage, isStreaming: false };
+          const finalMessages = [...newMessages, finalMessage];
+          setMessages(finalMessages);
+          saveHistory(finalMessages, historyKey);
+        }
+        
+        // Delay between words (faster for short words, slower for long words)
+        const wordDelay = Math.min(150, Math.max(50, words[i].length * 20));
+        await new Promise(resolve => setTimeout(resolve, wordDelay));
+      }
+      
     } catch (err) {
       setError('Failed to get a response. Please try again.');
       console.error('Error sending message:', err);
-    } finally {
       setIsTyping(false);
     }
+  };
+
+  // Enhanced bot response generator
+  const generateBotResponse = (userText) => {
+    const responses = [
+      `That's a fascinating question about "${userText}". Let me share some insights on this topic. Based on current understanding, there are several key aspects to consider when approaching this subject.`,
+      `I find your inquiry about "${userText}" quite intriguing. This touches on some important concepts that are worth exploring in detail. Let me break this down for you step by step.`,
+      `Thank you for asking about "${userText}". This is actually a complex topic with multiple dimensions. I'd be happy to help you understand the various aspects involved here.`,
+      `Your question regarding "${userText}" opens up some interesting possibilities for discussion. There are several angles we could explore, each offering unique perspectives on the matter.`,
+      `I appreciate you bringing up "${userText}". This subject has been evolving rapidly, and there are some exciting developments worth discussing. Let me walk you through the key points.`,
+      `The topic of "${userText}" is quite relevant in today's context. There are practical applications and theoretical considerations that make this an important area to understand thoroughly.`,
+      `When it comes to "${userText}", there are both traditional approaches and modern innovations to consider. I'll help you navigate through the essential information you need to know.`,
+      `Your interest in "${userText}" is well-placed, as this area has significant implications for various fields. Let me provide you with a comprehensive overview of the current landscape.`,
+      `I'm glad you asked about "${userText}". This connects to several broader themes that are worth exploring. Understanding these connections can provide valuable insights.`,
+      `The subject of "${userText}" involves some nuanced considerations that are important to address. I'll help clarify the key concepts and their practical applications.`
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
   };
 
   const clearChat = useCallback(() => {
@@ -165,73 +226,4 @@ export const ChatProvider = ({ children }) => {
       {children}
     </ChatContext.Provider>
   );
-};
-
-// Simulated backend functions - replace with real API calls
-const sendMessageToBot = async (message, token) => {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-  
-  // Simulate random errors occasionally
-  if (Math.random() < 0.1) {
-    throw new Error('Network error occurred');
-  }
-
-  // Generate a simple bot response
-  const responses = [
-    "That's an interesting question! Let me think about that for a moment.",
-    "I understand what you're asking. Here's my perspective on that topic.",
-    "Great question! I'd be happy to help you with that.",
-    "I see what you mean. Let me provide you with some information about that.",
-    "That's a thoughtful inquiry. Based on what I know, I can tell you that...",
-    "Thanks for asking! I think this is an important topic to discuss.",
-    "I appreciate your question. Here's what I can share about that subject.",
-    "That's definitely worth exploring. From my understanding...",
-    "Good point! Let me break this down for you.",
-    "I'm glad you brought that up. This is actually quite fascinating because..."
-  ];
-
-  const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-  
-  return {
-    success: true,
-    message: `${randomResponse} You mentioned: "${message}". This is a simulated response that would normally come from your AI backend. You can replace this with actual API calls to OpenAI, Claude, or your custom AI service.`
-  };
-};
-
-const simulateLoadChatHistory = async (userId) => {
-  // Simulate loading from localStorage or backend
-  const savedHistory = localStorage.getItem(`chatbot_history_${userId}`);
-  if (savedHistory) {
-    try {
-      return JSON.parse(savedHistory);
-    } catch (error) {
-      console.error('Error parsing chat history:', error);
-      return [];
-    }
-  }
-  return [];
-};
-
-const saveChatHistory = async (newMessages) => {
-  // In a real app, this would save to your backend
-  // For demo, we'll save to localStorage
-  try {
-    const userId = JSON.parse(localStorage.getItem('chatbot_user'))?.id;
-    if (userId) {
-      const existingHistory = await simulateLoadChatHistory(userId);
-      const updatedHistory = [...existingHistory, ...newMessages];
-      localStorage.setItem(`chatbot_history_${userId}`, JSON.stringify(updatedHistory));
-    }
-  } catch (error) {
-    console.error('Error saving chat history:', error);
-  }
-};
-
-const clearChatHistory = async (userId) => {
-  try {
-    localStorage.removeItem(`chatbot_history_${userId}`);
-  } catch (error) {
-    console.error('Error clearing chat history:', error);
-  }
 }; 

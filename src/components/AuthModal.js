@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Eye, EyeOff, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,6 +13,19 @@ const AuthModal = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Clear form when modal opens or mode changes
+  useEffect(() => {
+    if (showAuthModal) {
+      setFormData({
+        name: '',
+        email: '',
+        password: ''
+      });
+      setError('');
+      setShowPassword(false);
+    }
+  }, [showAuthModal, isLogin]);
 
   if (!showAuthModal) return null;
 
@@ -94,14 +107,6 @@ const AuthModal = () => {
             : 'Join us to save your chat history'
           }
         </p>
-
-        {/* Demo credentials hint */}
-        {isLogin && (
-          <div className="demo-hint">
-            <strong>Demo:</strong> Use any email/password or try <br />
-            <code>demo@example.com</code> / <code>password</code>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="auth-form">
           {!isLogin && (

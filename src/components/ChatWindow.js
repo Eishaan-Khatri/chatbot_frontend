@@ -32,75 +32,82 @@ const ChatWindow = () => {
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      // Clean up any active recognition on unmount
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+        recognitionRef.current = null;
+      }
     };
   }, []);
   
-  // A single, comprehensive hook for all microphone logic
-  const setupSpeechRecognition = useCallback(() => {
-    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      setMicState('error');
-      console.error("Speech recognition not supported in this browser.");
+  const handleMicClick = useCallback(() => {
+    if (micState === 'recognizing') {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setMicState('stopping');
       return;
     }
+
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      setMicState('error');
+      alert("Speech recognition is not supported in this browser.");
+      return;
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    
     recognition.lang = 'en-US';
-    // Settings for improved accuracy and user experience
-    recognition.continuous = true;
+    recognition.continuous = false; // Stop after a pause in speech
     recognition.interimResults = true;
 
-    recognition.onstart = () => setMicState('recognizing');
-    recognition.onend = () => setMicState('idle');
+    recognition.onstart = () => {
+      setMicState('recognizing');
+    };
+    
+    recognition.onend = () => {
+      setMicState('idle');
+      recognitionRef.current = null;
+    };
     
     recognition.onresult = (event) => {
-      let interim_transcript = '';
       let final_transcript = '';
-
       for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          final_transcript += event.results[i][0].transcript;
-        } else {
-          interim_transcript += event.results[i][0].transcript;
-        }
+        final_transcript += event.results[i][0].transcript;
       }
-      // Update the input field with the latest transcript
-      setInputText(final_transcript || interim_transcript);
+      setInputText(prev => prev + final_transcript);
     };
 
     recognition.onerror = (event) => {
       console.error("Mic Error:", event.error);
       setMicState('error');
+      recognitionRef.current = null;
+      
       if (event.error === 'not-allowed') {
         alert("Microphone permission denied. Please enable it in your browser's site settings.");
-      } else if (event.error === 'audio-capture') {
-        alert("No microphone found, or it's busy. Please check your mic and close other apps.");
+      } else if (event.error === 'audio-capture' || event.error === 'no-speech') {
+        // Less intrusive alert for common, non-blocking errors
       } else {
-        alert(`Microphone error: ${event.error}`);
+        alert(`An error occurred with the microphone: ${event.error}`);
       }
     };
-    recognitionRef.current = recognition;
-  }, [setInputText]);
 
-  useEffect(() => {
-    setupSpeechRecognition();
-  }, [setupSpeechRecognition]);
-
-  const handleMicClick = () => {
-    const recognition = recognitionRef.current;
-    if (!recognition) return;
-
-    if (micState === 'recognizing') {
-      recognition.stop();
-    } else {
-      try {
-        recognition.start();
-      } catch (err) {
-        console.error("Failed to start recognition:", err);
+    try {
+      recognition.start();
+    } catch (err) {
+      console.error("Failed to start recognition:", err);
+      if (err instanceof DOMException && err.name === 'InvalidStateError') {
+        // This can happen if start() is called when not idle.
+        // The new logic should prevent this, but as a safeguard:
+        recognitionRef.current = null;
+        setMicState('idle');
+      } else {
         setMicState('error');
-        alert("Could not start the microphone. Please try refreshing the page.");
       }
     }
-  };
+  }, [micState]);
 
   const handleSendMessage = async () => {
     if (!inputText.trim() || !isAuthenticated) {
@@ -278,26 +285,24 @@ const ChatWindow = () => {
             />
           </div>
           
-          {recognitionRef.current && (
-            <motion.button
-              className={`mic-button ${micState === 'recognizing' ? 'recording' : ''}`}
-              onClick={handleMicClick}
-              disabled={isTyping || !isOnline || micState === 'permission' || micState === 'stopping'}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              title={
-                {
-                  idle: 'Start voice input',
-                  permission: 'Waiting for permission...',
-                  recognizing: 'Stop recording',
-                  stopping: 'Processing...',
-                  error: 'Mic error, click to retry',
-                }[micState]
-              }
-            >
-              <Mic size={20} />
-            </motion.button>
-          )}
+          <motion.button
+            className={`mic-button ${micState === 'recognizing' ? 'recording' : ''}`}
+            onClick={handleMicClick}
+            disabled={isTyping || !isOnline || micState === 'permission' || micState === 'stopping'}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title={
+              {
+                idle: 'Start voice input',
+                permission: 'Waiting for permission...',
+                recognizing: 'Stop recording',
+                stopping: 'Processing...',
+                error: 'Mic error, click to retry',
+              }[micState]
+            }
+          >
+            <Mic size={20} />
+          </motion.button>
           
           <motion.button
             className="send-button"

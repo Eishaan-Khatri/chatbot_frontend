@@ -120,35 +120,30 @@ const simulateLogin = async (email, password) => {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  // Simple validation for demo purposes
-  if (email === 'demo@example.com' && password === 'password') {
+  // Get registered users from localStorage
+  const registeredUsers = JSON.parse(localStorage.getItem('chatbot_registered_users') || '{}');
+  
+  // Check if user exists and password matches
+  if (registeredUsers[email] && registeredUsers[email].password === password) {
     return {
       success: true,
       token: 'mock-jwt-token-' + Date.now(),
       user: {
-        id: '1',
-        name: 'Demo User',
-        email: 'demo@example.com',
-        avatar: 'DU'
+        id: registeredUsers[email].id,
+        name: registeredUsers[email].name,
+        email: email,
+        avatar: registeredUsers[email].avatar
       }
     };
   } else if (email && password) {
-    // Allow any email/password for demo
-    const name = email.split('@')[0];
     return {
-      success: true,
-      token: 'mock-jwt-token-' + Date.now(),
-      user: {
-        id: Date.now().toString(),
-        name: name.charAt(0).toUpperCase() + name.slice(1),
-        email: email,
-        avatar: name.substring(0, 2).toUpperCase()
-      }
+      success: false,
+      error: 'Invalid email or password. Please check your credentials or sign up if you don\'t have an account.'
     };
   } else {
     return {
       success: false,
-      error: 'Invalid email or password'
+      error: 'Email and password are required'
     };
   }
 };
@@ -157,21 +152,44 @@ const simulateSignup = async (name, email, password) => {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  if (name && email && password) {
-    return {
-      success: true,
-      token: 'mock-jwt-token-' + Date.now(),
-      user: {
-        id: Date.now().toString(),
-        name: name,
-        email: email,
-        avatar: name.substring(0, 2).toUpperCase()
-      }
-    };
-  } else {
+  if (!name || !email || !password) {
     return {
       success: false,
       error: 'All fields are required'
     };
   }
+
+  // Get registered users from localStorage
+  const registeredUsers = JSON.parse(localStorage.getItem('chatbot_registered_users') || '{}');
+  
+  // Check if user already exists
+  if (registeredUsers[email]) {
+    return {
+      success: false,
+      error: 'An account with this email already exists. Please login instead.'
+    };
+  }
+
+  // Create new user
+  const newUser = {
+    id: Date.now().toString(),
+    name: name,
+    password: password, // In real app, this would be hashed
+    avatar: name.substring(0, 2).toUpperCase()
+  };
+
+  // Save to registered users
+  registeredUsers[email] = newUser;
+  localStorage.setItem('chatbot_registered_users', JSON.stringify(registeredUsers));
+
+  return {
+    success: true,
+    token: 'mock-jwt-token-' + Date.now(),
+    user: {
+      id: newUser.id,
+      name: newUser.name,
+      email: email,
+      avatar: newUser.avatar
+    }
+  };
 }; 

@@ -89,6 +89,9 @@ const MessageBubble = ({ message }) => {
               <ReactMarkdown components={{ code: CodeBlock }}>
                 {message.text}
               </ReactMarkdown>
+              {message.sender === 'bot' && message.isStreaming && (
+                <span className="typing-cursor">|</span>
+              )}
             </div>
             
             {message.sender === 'bot' && !message.isStreaming && (
